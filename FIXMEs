@@ -7,3 +7,8 @@ FIXME: make each methods collection a (possible templates) base class
 
 FIXME: figure out how to include instructions about the format of
   translated strings such as the length.
+
+
+29-Oct-2024:
+- openSUSE: needs ...
+  * zypper install gettext-tools
