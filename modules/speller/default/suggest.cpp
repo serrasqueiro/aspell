@@ -381,7 +381,7 @@ namespace {
       : lang(l), original(), parms(p), sp(m), have_presuf(false) 
       , threshold(1), max_word_length(0)
     {
-      memset(check_info, 0, sizeof(check_info));
+      memset(static_cast<void *>(check_info), 0, sizeof(check_info));
       original.word = w;
       l->to_lower(original.lower, w.str());
       l->to_clean(original.clean, w.str());
@@ -415,10 +415,14 @@ namespace {
   };
 
   struct SavedBufs : public Vector<ObjStack::Memory *> {
-    ~SavedBufs() {
+    void reset() {
       for (Vector<ObjStack::Memory *>::iterator i = begin(), e = end();
            i != e; ++i)
         ObjStack::dealloc(*i);
+      clear();
+    }
+    ~SavedBufs() {
+      reset();
     }
   };
 
@@ -460,6 +464,8 @@ namespace {
     void reset() {
       clear();
       buf.reset();
+      saved_bufs_.reset();
+      saved_near_misses_.clear();
     }
     void get_words(Convert * conv, Vector<CharVector> & res) {
       res.clear();
@@ -709,7 +715,7 @@ namespace {
     buffer.commit_temp();
     add_nearmiss(beg, end - beg, 0, inf);
     //CERR.printl(tmp);
-    memset(check_info, 0, sizeof(CheckInfo)*res);
+    memset(static_cast<void *>(check_info), 0, sizeof(CheckInfo)*res);
   }
 
   void Working::add_nearmiss(char * word, unsigned word_size,
@@ -1008,7 +1014,7 @@ namespace {
         temp_buffer.reset();
         
         // first expand any prefixes
-        if (sp->fast_scan) { // if fast_scan than no prefixes
+        if (sp->fast_scan) { // if fast_scan, then no prefixes
           single.word.str = sw->word;
           single.word.size = strlen(sw->word);
           single.aff = (const unsigned char *)sw->aff;
@@ -1552,12 +1558,15 @@ namespace {
       Working * src = i->src;
       if (i->repl_list != 0) {
 	do {
-          char * word = i->src->fix_word(res.buf, i->repl_list->word);
+          const char * word = i->src->fix_word(res.buf, i->repl_list->word);
  	  dup_pair = duplicates_check.insert(word);
  	  if (dup_pair.second) {
             const char * pos = strchr(word, ' ');
-            bool in_dict = pos == NULL ?
-              src->sp->check(word) && true : src->sp->check(word, pos - word) && src->sp->check(pos + 1);
+            bool in_dict;
+            if (pos == NULL)
+              in_dict = src->sp->check(word);
+            else
+              in_dict = src->sp->check(word, pos - word) && src->sp->check(pos + 1);
             if (in_dict)
               res.push_back(Suggestion(word,&*i));
           }

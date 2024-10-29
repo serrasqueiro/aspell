@@ -124,6 +124,14 @@ libpspell_la_LDFLAGS = $(libaspell_la_LDFLAGS)
 
 endif
 
+if W_ALL_ERROR
+warning-settings.mk: ${srcdir}/test/warning-settings.cpp
+	$(CXX) ${srcdir}/test/warning-settings.cpp -o warning-settings
+	./warning-settings > warning-settings.mk
+ include warning-settings.mk
+CXXFLAGS += $(EXTRA_CXXFLAGS)
+endif
+
 EXTRA_DIST += common/*.hpp common/*.h\
               modules/speller/default/*.hpp\
               lib/*.hpp
@@ -402,7 +410,7 @@ maintainer-clean-local:
 
 dist-hook:
 	mkdir $(distdir)/maintainer
-	cp autogen config-opt config-debug TODO FIXMEs README.md sanity-check.sh \
+	cp autogen.sh config-opt config-debug TODO FIXMEs README.md sanity-check.sh \
            $(distdir)/maintainer
 
 distcheck: dist
